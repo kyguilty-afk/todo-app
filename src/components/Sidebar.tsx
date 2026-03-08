@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { get, set as setIDB } from 'idb-keyval';
 import { useTodoStore } from '../store/useTodoStore';
-import { LayoutList, Plus, Folder, FolderOpen, Download, RefreshCw, Pencil, Check, X } from 'lucide-react';
+import { LayoutList, Plus, Folder, FolderOpen, Download, Upload, RefreshCw, Pencil, Check, X } from 'lucide-react';
 
 export const Sidebar = () => {
     const { categories, selectedLargeCategoryId, setSelectedLargeCategoryId, addLargeCategory, editLargeCategory, importData } = useTodoStore();
     const [newCategoryName, setNewCategoryName] = useState('');
     const [fileHandle, setFileHandle] = useState<any>(null);
-    const [hasStoredHandle, setHasStoredHandle] = useState<boolean>(false);
     const skipNextSave = useRef(false);
 
     const [editingLargeId, setEditingLargeId] = useState<string | null>(null);
@@ -19,17 +18,14 @@ export const Sidebar = () => {
             try {
                 const handle = await get('nexus-todo-file-handle');
                 if (handle) {
-                    setHasStoredHandle(true);
                     const permission = await handle.queryPermission({ mode: 'readwrite' });
                     if (permission === 'granted') {
                         try {
                             const file = await handle.getFile();
                             const text = await file.text();
-                            if (text.trim()) {
-                                const parsed = JSON.parse(text);
-                                skipNextSave.current = true;
-                                importData(parsed);
-                            }
+                            const parsed = JSON.parse(text);
+                            skipNextSave.current = true;
+                            importData(parsed);
                         } catch (readError) {
                             console.error('起動時の自動復元に失敗しました:', readError);
                         }
@@ -81,17 +77,31 @@ export const Sidebar = () => {
         URL.revokeObjectURL(url);
     };
 
-
+    const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const parsed = JSON.parse(event.target?.result as string);
+                importData(parsed);
+            } catch (err) {
+                alert('無効なJSONファイルです。復元できませんでした。');
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = ''; // reset
+    };
 
     const handleConnectAutoSave = async (forceNew = false) => {
         try {
-            if (!('showOpenFilePicker' in window)) {
+            if (!('showSaveFilePicker' in window)) {
                 alert('お使いのブラウザは自動同期に対応していません。ChromeかEdgeをご利用ください。');
                 return;
             }
 
             if (!forceNew) {
-                // まず保存済みのハンドルがあれば、権限復活を試みる
+                // まず保存済みのハンドルがあれば、権限復活を試みる（ブラウザ仕様上クリックなどのユーザー操作必須）
                 const storedHandle = await get('nexus-todo-file-handle');
                 if (storedHandle) {
                     try {
@@ -100,58 +110,34 @@ export const Sidebar = () => {
                             try {
                                 const file = await storedHandle.getFile();
                                 const text = await file.text();
-                                if (text.trim()) {
-                                    const parsed = JSON.parse(text);
-                                    skipNextSave.current = true;
-                                    importData(parsed);
-                                }
+                                const parsed = JSON.parse(text);
+                                skipNextSave.current = true;
+                                importData(parsed);
+                                alert('以前のファイルへの同期を再開し、データを復元しました！');
                             } catch (readError) {
                                 console.error('ファイルの読み込みに失敗:', readError);
-                                alert('ファイルの読み込みに失敗しました。データは復元されていません。');
+                                alert('同期を再開しましたが、ファイルの読み込みに失敗しました。現在の状態が上書きされます。');
                             }
                             setFileHandle(storedHandle);
                             return;
                         }
                     } catch (_e) {
-                        // 権限取得キャンセルまたは失敗
-                        return;
+                        // 権限取得失敗時は新規ファイル選択へ進む
                     }
                 }
             }
 
-            // 新規または強制変更の場合
-            // ファイルを選択（復元ファイルと自動保存ファイルを同じファイルにする）
-            const isCreateNew = confirm("新しくファイルを作成して保存しますか？\n\n・[OK] 新規でファイルを作成\n・[キャンセル] 既存のファイルを選択して復元＆同期");
-
-            let handle;
-            if (isCreateNew) {
-                // @ts-ignore
-                handle = await window.showSaveFilePicker({
-                    suggestedName: 'nexus_todo_autosync.json',
-                    types: [{ description: 'JSON Backup', accept: { 'application/json': ['.json'] } }],
-                });
-                // 初期状態を即時保存するためskipNextSaveは不要
-            } else {
-                // @ts-ignore
-                const [openHandle] = await window.showOpenFilePicker({
-                    types: [{ description: 'JSON Backup', accept: { 'application/json': ['.json'] } }],
-                });
-                handle = openHandle;
-
-                // 既存ファイルから読み込んで復元
-                const file = await handle.getFile();
-                const text = await file.text();
-                if (text.trim()) {
-                    const parsed = JSON.parse(text);
-                    skipNextSave.current = true;
-                    importData(parsed);
-                }
-            }
-
+            // @ts-ignore
+            const handle = await window.showSaveFilePicker({
+                suggestedName: 'nexus_todo_autosync.json',
+                types: [{
+                    description: 'JSON Backup',
+                    accept: { 'application/json': ['.json'] },
+                }],
+            });
             await setIDB('nexus-todo-file-handle', handle);
             setFileHandle(handle);
-            setHasStoredHandle(true);
-            if (!isCreateNew) alert('指定したファイルからデータを復元し、自動同期を開始しました！');
+            alert('自動同期を有効にしました！\nブラウザを開いている間、ここで指定したファイルにタスクがすべて自動上書き保存されます。');
         } catch (err) {
             console.error('Sync cancelled:', err);
         }
@@ -254,46 +240,39 @@ export const Sidebar = () => {
 
             <div className="sidebar-footer">
                 <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    <button className="add-btn flex-grow" onClick={handleExport} title="現在のデータを手動で1回ダウンロード">
-                        <Download size={16} /> ダウンロード
+                    <button className="add-btn flex-grow" onClick={handleExport} title="現在のデータを1回保存">
+                        <Download size={16} /> 保存
                     </button>
+                    <label className="add-btn flex-grow text-center" style={{ cursor: 'pointer' }} title="保存したファイルから復元">
+                        <Upload size={16} /> 復元
+                        <input type="file" accept=".json" style={{ display: 'none' }} onChange={handleImport} />
+                    </label>
                 </div>
-
                 {fileHandle ? (
-                    <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(74, 222, 128, 0.1)', padding: '0.5rem', borderRadius: '4px' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <button
-                            className="flex-grow"
+                            className="add-btn btn-primary flex-grow"
                             title="指定したローカルファイルに変更を常に自動保存（上書き）し続けます"
-                            style={{ cursor: 'default', background: 'transparent', border: 'none', color: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontSize: '14px', fontWeight: 'bold' }}
+                            style={{ cursor: 'default' }}
                         >
-                            <RefreshCw size={16} /> 自動同期中
+                            <RefreshCw size={16} /> PCへ自動同期中
                         </button>
                         <button
                             className="icon-btn edit-btn-small"
                             onClick={() => handleConnectAutoSave(true)}
-                            title="保存先ファイルを変更・別ファイルから復元"
-                            style={{ background: 'rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: '4px' }}
+                            title="保存先のファイルを変更する"
+                            style={{ background: 'rgba(255,255,255,0.05)', padding: '0.5rem', borderRadius: '4px' }}
                         >
                             <FolderOpen size={16} />
                         </button>
                     </div>
-                ) : hasStoredHandle ? (
-                    <button
-                        className="add-btn w-100"
-                        onClick={() => handleConnectAutoSave(false)}
-                        title="ブラウザ再起動時は自動復元にクリックが必要です"
-                        style={{ background: '#ef4444', color: '#fff', fontWeight: 'bold' }}
-                    >
-                        <RefreshCw size={16} className="mr-2" /> 前回ファイルから復元して同期
-                    </button>
                 ) : (
                     <button
                         className="add-btn w-100"
-                        onClick={() => handleConnectAutoSave(true)}
-                        title="PCファイル(自動保存用)を指定して同期を設定します"
-                        style={{ background: '#3b82f6', color: '#fff' }}
+                        onClick={() => handleConnectAutoSave()}
+                        title="指定したローカルファイルに変更を常に自動保存（上書き）し続けます"
                     >
-                        <RefreshCw size={16} /> PCファイルと同期 / 復元
+                        <RefreshCw size={16} /> PCファイルへの同期を再開/設定
                     </button>
                 )}
             </div>
