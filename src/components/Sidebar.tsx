@@ -163,50 +163,68 @@ export const Sidebar = () => {
                     const taskCount = category.smallCategories.reduce((acc, sum) => acc + sum.tasks.length, 0);
 
                     return (
-                        <div
-                            key={category.id}
-                            className={`sidebar-item ${isSelected ? 'active' : ''}`}
-                            onClick={() => {
-                                if (editingLargeId !== category.id) {
-                                    setSelectedLargeCategoryId(category.id);
-                                }
-                            }}
-                        >
-                            {editingLargeId === category.id ? (
-                                <div className="edit-inline-form flex-grow" onClick={(e) => e.stopPropagation()}>
-                                    <input
-                                        autoFocus
-                                        type="text"
-                                        value={editLargeName}
-                                        onChange={(e) => setEditLargeName(e.target.value)}
-                                        className="input-field input-small width-full"
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') handleEditLargeSubmit(category.id);
-                                            if (e.key === 'Escape') handleEditLargeCancel();
-                                        }}
-                                    />
-                                    <button className="icon-btn check-btn" onClick={() => handleEditLargeSubmit(category.id)}>
-                                        <Check size={16} className="icon-success" />
-                                    </button>
-                                    <button className="icon-btn delete-btn" onClick={handleEditLargeCancel}>
-                                        <X size={16} />
-                                    </button>
-                                </div>
-                            ) : (
-                                <>
-                                    <div className="sidebar-item-content">
-                                        {isSelected ? <FolderOpen size={18} className="icon-folder-open" /> : <Folder size={18} className="icon-folder" />}
-                                        <span className="sidebar-item-name">{category.name}</span>
-                                        <button
-                                            className="icon-btn edit-btn-small ml-auto"
-                                            onClick={(e) => handleEditLargeStart(e, category.id, category.name)}
-                                            title="大カテゴリ名を変更"
-                                        >
-                                            <Pencil size={14} />
+                        <div key={category.id}>
+                            <div
+                                className={`sidebar-item ${isSelected ? 'active' : ''}`}
+                                onClick={() => {
+                                    if (editingLargeId !== category.id) {
+                                        setSelectedLargeCategoryId(category.id);
+                                    }
+                                }}
+                            >
+                                {editingLargeId === category.id ? (
+                                    <div className="edit-inline-form flex-grow" onClick={(e) => e.stopPropagation()}>
+                                        <input
+                                            autoFocus
+                                            type="text"
+                                            value={editLargeName}
+                                            onChange={(e) => setEditLargeName(e.target.value)}
+                                            className="input-field input-small width-full"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') handleEditLargeSubmit(category.id);
+                                                if (e.key === 'Escape') handleEditLargeCancel();
+                                            }}
+                                        />
+                                        <button className="icon-btn check-btn" onClick={() => handleEditLargeSubmit(category.id)}>
+                                            <Check size={16} className="icon-success" />
+                                        </button>
+                                        <button className="icon-btn delete-btn" onClick={handleEditLargeCancel}>
+                                            <X size={16} />
                                         </button>
                                     </div>
-                                    <span className={`badge ${isSelected ? 'badge-primary' : ''}`}>{taskCount}</span>
-                                </>
+                                ) : (
+                                    <>
+                                        <div className="sidebar-item-content">
+                                            {isSelected ? <FolderOpen size={18} className="icon-folder-open" /> : <Folder size={18} className="icon-folder" />}
+                                            <span className="sidebar-item-name">{category.name}</span>
+                                            <button
+                                                className="icon-btn edit-btn-small ml-auto"
+                                                onClick={(e) => handleEditLargeStart(e, category.id, category.name)}
+                                                title="大カテゴリ名を変更"
+                                            >
+                                                <Pencil size={14} />
+                                            </button>
+                                        </div>
+                                        <span className={`badge ${isSelected ? 'badge-primary' : ''}`}>{taskCount}</span>
+                                    </>
+                                )}
+                            </div>
+                            {/* 小カテゴリーへのジャンプメニュー */}
+                            {isSelected && category.smallCategories.length > 0 && (
+                                <div className="sidebar-subcategories">
+                                    {category.smallCategories.map(sc => (
+                                        <div
+                                            key={sc.id}
+                                            className="sidebar-subitem"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                document.getElementById(`small-category-${sc.id}`)?.scrollIntoView({ behavior: 'smooth' });
+                                            }}
+                                        >
+                                            <span className="sidebar-subitem-name">- {sc.name}</span>
+                                        </div>
+                                    ))}
+                                </div>
                             )}
                         </div>
                     );

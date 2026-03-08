@@ -47,7 +47,7 @@ export const SmallCategoryItem = ({ largeCategoryId, smallCategory }: Props) => 
     };
 
     return (
-        <div className="small-category">
+        <div id={`small-category-${smallCategory.id}`} className="small-category">
             <div className="category-header small-header" onClick={() => !isEditing && setIsOpen(!isOpen)}>
                 {isEditing ? (
                     <div className="edit-inline-form flex-grow" onClick={(e) => e.stopPropagation()}>
