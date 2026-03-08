@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { get, set as setIDB } from 'idb-keyval';
 import { useTodoStore } from '../store/useTodoStore';
 import { LayoutList, Plus, Folder, FolderOpen, Download, Upload, RefreshCw, Pencil, Check, X } from 'lucide-react';
@@ -7,6 +7,7 @@ export const Sidebar = () => {
     const { categories, selectedLargeCategoryId, setSelectedLargeCategoryId, addLargeCategory, editLargeCategory, importData } = useTodoStore();
     const [newCategoryName, setNewCategoryName] = useState('');
     const [fileHandle, setFileHandle] = useState<any>(null);
+    const skipNextSave = useRef(false);
 
     const [editingLargeId, setEditingLargeId] = useState<string | null>(null);
     const [editLargeName, setEditLargeName] = useState('');
@@ -19,6 +20,15 @@ export const Sidebar = () => {
                 if (handle) {
                     const permission = await handle.queryPermission({ mode: 'readwrite' });
                     if (permission === 'granted') {
+                        try {
+                            const file = await handle.getFile();
+                            const text = await file.text();
+                            const parsed = JSON.parse(text);
+                            skipNextSave.current = true;
+                            importData(parsed);
+                        } catch (readError) {
+                            console.error('起動時の自動復元に失敗しました:', readError);
+                        }
                         setFileHandle(handle);
                     }
                 }
@@ -27,11 +37,16 @@ export const Sidebar = () => {
             }
         };
         checkStoredHandle();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // 変更が発生するたびに自動保存を実行する副作用
     useEffect(() => {
         if (!fileHandle) return;
+        if (skipNextSave.current) {
+            skipNextSave.current = false;
+            return;
+        }
         const autoSaveToFile = async () => {
             try {
                 const writable = await fileHandle.createWritable();
@@ -92,8 +107,18 @@ export const Sidebar = () => {
                     try {
                         const permission = await storedHandle.requestPermission({ mode: 'readwrite' });
                         if (permission === 'granted') {
+                            try {
+                                const file = await storedHandle.getFile();
+                                const text = await file.text();
+                                const parsed = JSON.parse(text);
+                                skipNextSave.current = true;
+                                importData(parsed);
+                                alert('以前のファイルへの同期を再開し、データを復元しました！');
+                            } catch (readError) {
+                                console.error('ファイルの読み込みに失敗:', readError);
+                                alert('同期を再開しましたが、ファイルの読み込みに失敗しました。現在の状態が上書きされます。');
+                            }
                             setFileHandle(storedHandle);
-                            alert('以前のファイルへの同期を再開しました！');
                             return;
                         }
                     } catch (_e) {
