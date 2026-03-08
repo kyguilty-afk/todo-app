@@ -1,73 +1,82 @@
-# React + TypeScript + Vite
+# Nexus Todo
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+ローカル動作するTo-Doリストアプリ。サーバー不要・完全ブラウザ内で動作します。
 
-Currently, two official plugins are available:
+🔗 **[アプリを開く（GitHub Pages）](https://あなたのGitHubユーザー名.github.io/todo-app/)**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## ✨ 機能
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **3階層構造**: 大カテゴリ ＞ 小カテゴリ ＞ タスク
+- **期限管理**: 期限日を設定でき、期日順に自動ソート
+- **インライン編集**: カテゴリ名・タスク名・日付をその場で編集
+- **完全ローカル保存**: LocalStorageで自動保存（ブラウザを閉じても消えない）
+- **PCファイル自動同期**: File System Access APIで指定ファイルに常時自動保存（Chrome / Edge）
+- **レスポンシブ対応**: 画面幅に合わせて1〜4列グリッドに自動調整
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🚀 GitHub Pages へのデプロイ手順
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### 1. リポジトリを作成・プッシュ
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+# GitHubで新しいリポジトリを作成後
+git init
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin https://github.com/あなたのユーザー名/todo-app.git
+git push -u origin main
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. GitHub Pages の設定
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+1. GitHubのリポジトリページを開く
+2. **Settings** → **Pages** を開く
+3. **Source** を **GitHub Actions** に変更する
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+これだけ！ `main` ブランチにプッシュするたびに自動でビルド＆デプロイされます。
+
+### 3. アクセスURL
+
 ```
+https://あなたのGitHubユーザー名.github.io/todo-app/
+```
+
+> ⚠️ **リポジトリ名を変えた場合は `vite.config.ts` の `base` も変更してください。**
+
+---
+
+## 💻 ローカルで開発する場合
+
+```bash
+# 依存パッケージのインストール
+npm install
+
+# 開発サーバー起動
+npm run dev
+
+# プロダクションビルド
+npm run build
+```
+
+---
+
+## 🛠 技術スタック
+
+| 技術 | 用途 |
+|---|---|
+| React 19 + TypeScript | UIフレームワーク |
+| Vite | ビルドツール |
+| Zustand | 状態管理 |
+| LocalStorage | データ永続化 |
+| File System Access API | ローカルファイル自動同期 |
+| Lucide React | アイコン |
+
+---
+
+## 📄 ライセンス
+
+MIT
