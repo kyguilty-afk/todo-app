@@ -33,13 +33,15 @@ jobs:
           cache: "npm"
 
       - name: 依存パッケージをインストール
-        run: npm ci
+        run: npm install
 
       - name: プロダクションビルドを実行
         run: npm run build
 
       - name: GitHub Pages の設定
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: ビルド成果物をアップロード
         uses: actions/upload-pages-artifact@v3
